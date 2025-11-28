@@ -1,0 +1,123 @@
+# syntax=docker/dockerfile:1.6
+# Option 2: ARM64-native + aggressive cache management for Mac ARM E2E runs.
+FROM python:3.10-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_ROOT_USER_ACTION=ignore \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRY_MAX=6 \
+    PIP_RETRY_DELAY=5 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# System deps needed for psycopg2, Pillow, and Playwright browsers on ARM64.
+# Also includes Rust/Cargo for building pydantic-core from source
+RUN set -euxo pipefail; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      build-essential \
+      curl \
+      git \
+      libpq-dev \
+      gcc \
+      libjpeg62-turbo-dev \
+      libpng-dev \
+      libtiff6 \
+      libopenjp2-7 \
+      libwebp7 \
+      liblcms2-2 \
+      libffi-dev \
+      libxslt1.1 \
+      libxml2 \
+      zlib1g-dev \
+      libnss3 \
+      libatk1.0-0 \
+      libatk-bridge2.0-0 \
+      libdrm2 \
+      libgbm1 \
+      libgtk-3-0 \
+      libpango-1.0-0 \
+      libcairo2 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxfixes3 \
+      libxrender1 \
+      libxrandr2 \
+      libxkbcommon0 \
+      libasound2 \
+      fonts-liberation \
+      wget \
+      unzip \
+      ca-certificates \
+      locales \
+      tzdata \
+      cargo \
+      rustc; \
+    rm -rf /var/lib/apt/lists/*
+
+# Retry wrapper: purges pip cache every attempt and backs off to dodge Mac ARM zlib corruption.
+RUN set -euxo pipefail; \
+    cat <<'EOF' >/usr/local/bin/pip_retry
+#!/bin/bash
+set -euo pipefail
+retries="${PIP_RETRY_MAX:-5}"
+base_delay="${PIP_RETRY_DELAY:-4}"
+for attempt in $(seq 1 "${retries}"); do
+  python -m pip cache purge >/dev/null 2>&1 || true
+  if python -m pip "$@" --no-cache-dir; then
+    exit 0
+  fi
+  echo "pip command failed on attempt ${attempt}/${retries}" >&2
+  if [[ "${attempt}" -eq "${retries}" ]]; then
+    break
+  fi
+  sleep_seconds=$(( base_delay * (2 ** (attempt - 1)) ))
+  jitter=$(( RANDOM % 4 ))
+  sleep $(( sleep_seconds + jitter ))
+done
+echo "pip command exhausted ${retries} retries." >&2
+exit 1
+EOF
+
+RUN chmod +x /usr/local/bin/pip_retry
+
+# Keep tooling modern without reusing cached wheels between runs.
+RUN set -euxo pipefail; \
+    pip_retry install --upgrade "pip<25" setuptools wheel
+
+WORKDIR /app
+
+# Copy dependency manifests early to maximize Docker layer caching.
+COPY requirements.txt requirements.txt
+COPY requirements-e2e.txt requirements-e2e.txt
+
+# Strategy: Install requirements allowing source builds for problematic packages
+# This avoids ARM64 wheel download corruption by building from source when needed
+RUN set -euxo pipefail; \
+    pip_retry install --no-binary=pydantic-core,greenlet -r requirements.txt
+
+# Install E2E test requirements (these are less problematic)
+RUN set -euxo pipefail; \
+    pip_retry install -r requirements-e2e.txt
+
+# Install the ARM64 Playwright browsers (dependencies already installed manually above)
+RUN set -euxo pipefail; \
+    python -m playwright install chromium firefox webkit
+
+# Note: pip cache is disabled via PIP_NO_CACHE_DIR=1, so no cleanup needed
+
+# Copy the application source last to leverage the cached dependency layers.
+COPY . .
+
+# Set environment variables for testing
+ENV DJANGO_SETTINGS_MODULE=jazz_guitarist_paper.settings
+
+# Default to running pytest E2E suite with optimizations
+# -n auto: pytest-xdistによる並列実行（CPU数に応じて自動調整）
+# --maxfail=1: 最初の失敗で停止
+# --disable-warnings: 警告を非表示
+CMD ["pytest", "-n", "2", "--maxfail=1", "--disable-warnings", "-v", "tests/e2e/"]

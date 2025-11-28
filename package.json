@@ -1,0 +1,14 @@
+{
+  "name": "jazz_guitarist_paper",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx tailwindcss --input ./static_src/styles/app.css --output ./static/css/app.css --watch",
+    "dev:poll": "while true; do npx tailwindcss --input ./static_src/styles/app.css --output ./static/css/app.css; sleep 2; done",
+    "build": "npx tailwindcss --input ./static_src/styles/app.css --output ./static/css/app.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.13",
+    "tailwindcss": "^4.0.0-beta.10"
+  }
+}

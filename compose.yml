@@ -1,0 +1,85 @@
+services:
+  db:
+    image: postgres:16
+    container_name: jazz_guitarist_paper_db
+    environment:
+      POSTGRES_DB: jazz_guitarist_paper_db
+      POSTGRES_USER: world_company
+      POSTGRES_PASSWORD: djan2005go
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  web:
+    build: .
+    container_name: jazz_guitarist_paper_web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    environment:
+      DEBUG: "${DEBUG:-True}"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}"
+    depends_on:
+      db:
+        condition: service_started
+      tailwind-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  tailwind-init:
+    build:
+      context: .
+      target: frontend-dev
+    container_name: jazz_guitarist_paper_tailwind_init
+    command: sh -c "npm install --include=dev && npm run build && echo 'Initial TailwindCSS build completed!'"
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./:/app
+    restart: "no"
+
+  tailwind-watch:
+    build:
+      context: .
+      target: frontend-dev
+    container_name: jazz_guitarist_paper_tailwind_watch
+    command: sh -c "npm install --include=dev && npm run dev:poll"
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./:/app
+    depends_on:
+      tailwind-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    profiles:
+      - development
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    container_name: jazz_guitarist_paper_test
+    environment:
+      DATABASE_URL: "postgresql://world_company:djan2005go@db:5432/jazz_guitarist_paper_db"
+      DJANGO_SETTINGS_MODULE: jazz_guitarist_paper.settings
+      BASE_URL: "http://web:8000"
+    volumes:
+      - ./:/app
+      - ./tests:/app/tests
+    depends_on:
+      web:
+        condition: service_started
+      db:
+        condition: service_started
+    profiles:
+      - test
+
+volumes:
+  postgres_data:

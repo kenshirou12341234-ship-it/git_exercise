@@ -1,0 +1,10 @@
+.pytest_cache/
+*/__pycache__/
+*/*/__pycache__/
+*/migrations/__pycache__/
+db.sqlite3
+.DS_Store
+node_modules/
+static/css/*.css
+static/css/*.css.map
+staticfiles/
