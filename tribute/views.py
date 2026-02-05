@@ -1,3 +1,4 @@
 from django.shortcuts import render
 
-# Create your views here.
+def for_reinhardt(request):
+    return render(request, 'tribute/for_reinhardt.html')
