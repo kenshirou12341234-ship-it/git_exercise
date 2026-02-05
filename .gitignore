@@ -8,3 +8,4 @@ node_modules/
 static/css/*.css
 static/css/*.css.map
 staticfiles/
+*:Zone.Identifier
