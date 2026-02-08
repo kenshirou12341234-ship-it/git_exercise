@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 # Option 2: ARM64-native + aggressive cache management for Mac ARM E2E runs.
-FROM python:3.10-slim
+FROM --platform=linux/arm64 python:3.10-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_ROOT_USER_ACTION=ignore \
