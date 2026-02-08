@@ -37,9 +37,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tribute'
+    'accounts',
+    'tribute', 
+    
 ]
 
+AUTH_USER_MODEL='accounts.User'
+
+LOGIN_REDIRECT_URL='for_reinhard'
+LOGOUT__REDIRECT_URL='accounts:login'
+LOGIN_URL='accounts:login'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

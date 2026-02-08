@@ -1,5 +1,11 @@
+import os
+import django
 import pytest
 from playwright.sync_api import Browser, BrowserContext, Page
+
+# Django設定の初期化
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'jazz_guitarist_paper.settings')
+django.setup()
 
 
 @pytest.fixture(scope="session")
