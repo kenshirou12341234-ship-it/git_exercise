@@ -4,13 +4,21 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
 User = get_user_model()
 
-
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = 'ユーザー名'
+        self.fields['email'].label = 'メールアドレス'
+        self.fields['password1'].label = 'パスワード'
+        self.fields['password2'].label = 'パスワード(確認)'
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'block w-full px-3 py-2 border border-gray-300 rounded-md'
 
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -24,7 +32,6 @@ class RegistrationForm(UserCreationForm):
         if commit:
             user.save()
         return user
-
 
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(

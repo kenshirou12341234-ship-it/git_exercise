@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1.6
 # Option 2: ARM64-native + aggressive cache management for Mac ARM E2E runs.
-FROM --platform=linux/arm64 python:3.10-slim
-
+FROM python:3.10-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_ROOT_USER_ACTION=ignore \
     PIP_NO_CACHE_DIR=1 \
@@ -116,8 +115,6 @@ COPY . .
 # Set environment variables for testing
 ENV DJANGO_SETTINGS_MODULE=jazz_guitarist_paper.settings
 
-# Default to running pytest E2E suite with optimizations
-# -n auto: pytest-xdistによる並列実行（CPU数に応じて自動調整）
-# --maxfail=1: 最初の失敗で停止
-# --disable-warnings: 警告を非表示
-CMD ["pytest", "-n", "2", "--maxfail=1", "--disable-warnings", "-v", "tests/e2e/"]
+
+
+CMD ["pytest", "--disable-warnings", "-v", "tests/e2e/"]

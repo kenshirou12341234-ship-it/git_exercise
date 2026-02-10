@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Reinhardt</title>
+</head>
+<body>
+    <header>
+        {% if user.is_authenticated %}
+            <p>ようこそ、{{ user.username }} さん。</p>
+            <a href="{% url 'accounts:logout' %}">ログアウト</a>
+        {% else %}
+            <a href="{% url 'accounts:login' %}">ログイン</a>
+            <a href="{% url 'accounts:register' %}">新規登録</a>
+        {% endif %}
+    </header>
+
+    <main>
+        <h1>A Tribute to the Great Jazz Guitarist</h1>
+        <p>From those who take the first step in learning with aspiration.</p>
+    </main>
+</body>
+</html>

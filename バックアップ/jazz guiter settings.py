@@ -89,13 +89,11 @@ import os
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME', 'jazz_guitarist_paper_db'),
-        'USER': os.environ.get('DATABASE_USERNAME', 'world_company'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'djan2005go'),
-        'HOST': os.environ.get('DATABASE_HOST', 'db'),  
-        'PORT': '5432',
+        'NAME': 'jazz_guitarist_paper_db',
+        'USER': 'world_company',
+        'PASSWORD': 'djan2005go',
+        'HOST': 'db',
     }
-
 }
 
 
